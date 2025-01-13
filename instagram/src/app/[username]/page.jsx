@@ -6,12 +6,14 @@ import { UserContext } from "../contexts/user-context";
 import axios from "axios";
 import { useParams } from "next/navigation";
 import { MainLayout } from "../common/MainLayout";
+import { toast } from "react-toastify";
 
 const Page = () => {
   const { username } = useParams();
-  const { user: currentUser } = useContext(UserContext);
+  const { user: currentUser, accessToken } = useContext(UserContext);
   const [posts, setPosts] = useState([]);
   const [user, setUser] = useState(null);
+  const [isFollowed, setIsFollowed] = useState(false);
 
   useEffect(() => {
     axios.get("http://localhost:3001/api/users/" + username).then((res) => {
@@ -32,6 +34,34 @@ const Page = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user && currentUser) {
+      const result = user.followers.some((follower) => {
+        return follower.follower === currentUser._id;
+      });
+      setIsFollowed(result);
+    }
+  }, [user, currentUser]);
+
+  const handleFollow = () => {
+    axios
+      .post(
+        "http://localhost:3001/api/users/follow",
+        {
+          userId: user._id,
+        },
+        {
+          headers: {
+            Authorization: "Bearer " + accessToken,
+          },
+        }
+      )
+      .then((res) => {
+        setIsFollowed(res.data.followed);
+        toast.success(res.data.message);
+      });
+  };
+
   if (!user) return null;
 
   const isOwner = currentUser._id === user._id;
@@ -48,26 +78,37 @@ const Page = () => {
               height={100}
               className="border w-[100px] h-[100px] rounded-full object-cover"
             />
-            <div className="text-base font-semibold text-center mt-2">{user.fullname}</div>
+            <div className="text-base font-semibold text-center mt-2">
+              {user.fullname}
+            </div>
           </div>
           <div>
-            <h1 className="font-bold text-2xl">{user.username}</h1>
+            <h1 className="font-bold text-2xl flex justify-between mb-2">
+              {user.username}
+              {!isOwner && (
+                <button onClick={handleFollow}>
+                  {isFollowed ? "Unfollow" : "Follow"}
+                </button>
+              )}
+            </h1>
+
             {isOwner && (
               <div>
                 <button>Edit profile</button>
               </div>
             )}
+
             <div className="flex gap-6">
               <div className="flex flex-col items-center">
-                <div>0</div>
+                <div>{user.posts.length}</div>
                 <div>posts</div>
               </div>
               <div className="flex flex-col items-center">
-                <div>0</div>
+                <div>{user.followers.length}</div>
                 <div>followers</div>
               </div>
               <div className="flex flex-col items-center">
-                <div>0</div>
+                <div>{user.followings.length}</div>
                 <div>following</div>
               </div>
             </div>

@@ -10,17 +10,26 @@ const userSchema = new mongoose.Schema(
     gender: { type: String, enum: ["Male", "Female"] },
     bio: { type: String },
     profileUrl: { type: String },
-    postCount: { type: Number, default: 0 },
-    followersCount: { type: Number, default: 0 },
-    followingCount: { type: Number, default: 0 },
   },
-  { toJSON: { virtuals: true }, toObject: { virtuals: true }, timestamps: true }
+  { toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-userSchema.virtual("follows", {
+userSchema.virtual("posts", {
+  ref: "posts",
+  localField: "_id",
+  foreignField: "user",
+});
+
+userSchema.virtual("followers", {
   ref: "follows",
   localField: "_id",
   foreignField: "user",
+});
+
+userSchema.virtual("followings", {
+  ref: "follows",
+  localField: "_id",
+  foreignField: "follower",
 });
 
 const UserModel = mongoose.model("users", userSchema);

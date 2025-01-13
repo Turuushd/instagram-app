@@ -1,8 +1,13 @@
 import mongoose from "mongoose";
 
-const followSchema = new mongoose.Schema(
+const followsSchema = new mongoose.Schema(
   {
     user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "users",
+      required: true,
+    },
+    follower: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "users",
       required: true,
@@ -11,6 +16,6 @@ const followSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const FollowModel = mongoose.model("follows", followSchema);
+const FollowModel = mongoose.model("follows", followsSchema);
 
 export default FollowModel;

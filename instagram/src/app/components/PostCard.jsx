@@ -1,19 +1,24 @@
 import Link from "next/link";
 import { useContext, useEffect, useState } from "react";
-import { TbHeart, TbMessage } from "react-icons/tb";
+import { TbHeart } from "react-icons/tb";
 import { UserContext } from "../contexts/user-context";
 import { FcLike } from "react-icons/fc";
 import { FiMessageCircle } from "react-icons/fi";
 import axios from "axios";
 import Image from "next/image";
+import { toast } from "react-toastify";
 
 export const PostCard = ({ post }) => {
   const { user, accessToken } = useContext(UserContext);
+  const [loading, setLoading] = useState(false);
 
   const [likes, setLikes] = useState(post.likes);
   const [liked, setLiked] = useState(false);
 
   const [comments, setComments] = useState(post.comments);
+  const [commentsShown, setCommentsShown] = useState(false);
+
+  const [isFollowed, setIsFollowed] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -23,6 +28,7 @@ export const PostCard = ({ post }) => {
   }, [user, post]);
 
   const handleLike = () => {
+    setLoading(true);
     if (!liked) {
       axios
         .post(`http://localhost:3001/api/posts/${post._id}/likes`, null, {
@@ -33,6 +39,7 @@ export const PostCard = ({ post }) => {
         .then((res) => {
           setLikes([...likes, res.data]);
           setLiked(true);
+          setLoading(false);
         });
     } else {
       axios
@@ -46,19 +53,45 @@ export const PostCard = ({ post }) => {
             likes.filter((like) => like.user.username === user.username)
           );
           setLiked(false);
+          setLoading(false);
         });
     }
     setLiked(!liked);
   };
 
   const handleComment = (e) => {
-    e.preventDefault();
-    const comment = e.target.comment.value;
+    if (comments.length > 0) {
+      setLoading(true);
+      e.preventDefault();
+      const comment = e.target.comment.value;
 
+      axios
+        .post(
+          `http://localhost:3001/api/posts/${post._id}/comments`,
+          { comment },
+          {
+            headers: {
+              Authorization: "Bearer " + accessToken,
+            },
+          }
+        )
+        .then((res) => {
+          console.log(res.data);
+          setComments([...comments, res.data]);
+          setLoading(false);
+        });
+
+      e.target.comment.value = "";
+    }
+  };
+
+  const handleFollow = () => {
     axios
       .post(
-        `http://localhost:3001/api/posts/${post._id}/comments`,
-        { comment },
+        "http://localhost:3001/api/users/follow",
+        {
+          userId: user._id,
+        },
         {
           headers: {
             Authorization: "Bearer " + accessToken,
@@ -66,10 +99,12 @@ export const PostCard = ({ post }) => {
         }
       )
       .then((res) => {
-        console.log(res.data);
-        setComments([...comments, res.data]);
+        setIsFollowed(res.data.followed);
+        toast.success(res.data.message);
       });
   };
+
+  const exisitingUser = user.username === post.user.username;
 
   return (
     <li className="flex flex-col gap-2 pt-2">
@@ -86,9 +121,14 @@ export const PostCard = ({ post }) => {
           </div>
           <div className="font-semibold">{post.user.username}</div>
         </Link>
-        <button className="py-1 px-[6px] bg-[#363636] rounded-md">
-          Follow
-        </button>
+        {!exisitingUser && (
+          <button
+            className="py-1 px-[6px] bg-[#363636] rounded-md"
+            onClick={handleFollow}
+          >
+            {isFollowed ? "Unfollow" : "Follow"}
+          </button>
+        )}
       </div>
       <Image
         width={400}
@@ -101,28 +141,50 @@ export const PostCard = ({ post }) => {
       <div className="flex gap-2">
         <div className="flex items-center gap-1">
           {likes.length}{" "}
-          <button onClick={handleLike}>
+          <button
+            disabled={loading}
+            onClick={handleLike}
+            className="disabled:opacity-50"
+          >
             {liked ? <FcLike /> : <TbHeart />}
           </button>
         </div>
-        <div className="flex items-center gap-1">
-          {comments.length} <FiMessageCircle />
-          <form onSubmit={handleComment}>
-            <input type="text" name="comment" className="text-black" />
-          </form>
-        </div>
+
+        {!commentsShown && (
+          <p
+            onClick={() => {
+              setCommentsShown(true);
+            }}
+            className="flex gap-2 items-center cursor-pointer"
+          >
+            <FiMessageCircle /> Show comments...
+          </p>
+        )}
       </div>
       <div className="flex gap-1">
         <p className="font-semibold">{post.user.username}</p>
         {post.description}
       </div>
-      <ul>
-        {comments.map((comment) => (
-          <li key={comment._id}>
-            <b>{comment.user.username}:</b> {comment.comment}
-          </li>
-        ))}
-      </ul>
+      {commentsShown && (
+        <>
+          <ul>
+            {comments.map((comment) => (
+              <li key={comment._id}>
+                <b>{comment.user.username}:</b> {comment.comment}
+              </li>
+            ))}
+          </ul>
+          <form onSubmit={handleComment}>
+            <input
+              disabled={loading}
+              type="text"
+              name="comment"
+              className="bg-black"
+              placeholder="Write comment"
+            />
+          </form>
+        </>
+      )}
     </li>
   );
 };
