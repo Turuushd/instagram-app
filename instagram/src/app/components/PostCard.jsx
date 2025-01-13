@@ -1,9 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 import { useContext, useEffect, useState } from "react";
 import { TbHeart, TbMessage } from "react-icons/tb";
 import { UserContext } from "../contexts/user-context";
+import { FcLike } from "react-icons/fc";
+import { FiMessageCircle } from "react-icons/fi";
 import axios from "axios";
+import Image from "next/image";
 
 export const PostCard = ({ post }) => {
   const { user, accessToken } = useContext(UserContext);
@@ -98,11 +100,13 @@ export const PostCard = ({ post }) => {
       />
       <div className="flex gap-2">
         <div className="flex items-center gap-1">
-          {likes.length} <TbHeart />{" "}
-          <button onClick={handleLike}>{liked ? "Liked" : "Like"}</button>
+          {likes.length}{" "}
+          <button onClick={handleLike}>
+            {liked ? <FcLike /> : <TbHeart />}
+          </button>
         </div>
         <div className="flex items-center gap-1">
-          {comments.length} <TbMessage />
+          {comments.length} <FiMessageCircle />
           <form onSubmit={handleComment}>
             <input type="text" name="comment" className="text-black" />
           </form>
