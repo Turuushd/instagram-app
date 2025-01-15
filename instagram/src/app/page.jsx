@@ -17,7 +17,7 @@ export default function Home() {
   return (
     <MainLayout>
       <div className="container">
-        <Storys />
+        {/* <Storys /> */}
         <Posts />
       </div>
     </MainLayout>

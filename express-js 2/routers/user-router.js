@@ -2,8 +2,34 @@ import express from "express";
 import UserModel from "../models/user-model.js";
 import FollowModel from "../models/follow-model.js";
 import { authMiddleware } from "../middlewares/auth-middleware.js";
+import multer from "multer";
+import { nanoid } from "nanoid";
+import { v2 as cloudinary } from "cloudinary";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const router = express.Router();
+
+cloudinary.config({
+  cloud_name: "db4zsfsxl",
+  api_key: "154785927183374",
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./images/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `${nanoid()}-${file.originalname}`;
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({ storage });
+
+router.use(upload.single("file"));
 
 router.get("/:username", async (req, res) => {
   const { username } = req.params;
@@ -12,6 +38,27 @@ router.get("/:username", async (req, res) => {
     .populate("followers")
     .populate("followings");
   return res.send(user);
+});
+
+router.post("/:username/image", authMiddleware, async (req, res) => {
+  const username = req.params.username;
+  const currentUsername = req.user.username;
+
+  if (username !== currentUsername)
+    return res
+      .status(403)
+      .send({ message: "You cant't change other user profile" });
+
+  try {
+    const response = await cloudinary.uploader.upload(req.file.path);
+    const profileUrl = response.secure_url;
+    await UserModel.updateOne({ username }, { profileUrl });
+    return res.send({ message: "Updated success!", profileUrl });
+  } catch (err) {
+    return res.status(500).send({
+      message: "Failed to upload!",
+    });
+  }
 });
 
 router.post("/follow", authMiddleware, async (req, res) => {

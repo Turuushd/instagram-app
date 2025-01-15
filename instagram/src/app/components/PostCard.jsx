@@ -7,6 +7,10 @@ import { FiMessageCircle } from "react-icons/fi";
 import axios from "axios";
 import Image from "next/image";
 import { toast } from "react-toastify";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+dayjs.extend(relativeTime);
 
 export const PostCard = ({ post }) => {
   const { user, accessToken } = useContext(UserContext);
@@ -60,29 +64,28 @@ export const PostCard = ({ post }) => {
   };
 
   const handleComment = (e) => {
-    if (comments.length > 0) {
-      setLoading(true);
-      e.preventDefault();
-      const comment = e.target.comment.value;
+    e.preventDefault();
+    if (!e.target.comment.value.trim()) return;
+    setLoading(true);
+    const comment = e.target.comment.value;
 
-      axios
-        .post(
-          `http://localhost:3001/api/posts/${post._id}/comments`,
-          { comment },
-          {
-            headers: {
-              Authorization: "Bearer " + accessToken,
-            },
-          }
-        )
-        .then((res) => {
-          console.log(res.data);
-          setComments([...comments, res.data]);
-          setLoading(false);
-        });
+    axios
+      .post(
+        `http://localhost:3001/api/posts/${post._id}/comments`,
+        { comment },
+        {
+          headers: {
+            Authorization: "Bearer " + accessToken,
+          },
+        }
+      )
+      .then((res) => {
+        console.log(res.data);
+        setComments([...comments, res.data]);
+        setLoading(false);
+      });
 
-      e.target.comment.value = "";
-    }
+    e.target.comment.value = "";
   };
 
   const handleFollow = () => {
@@ -165,6 +168,7 @@ export const PostCard = ({ post }) => {
         <p className="font-semibold">{post.user.username}</p>
         {post.description}
       </div>
+      <p>{dayjs(post.createdAt).fromNow()}</p>
       {commentsShown && (
         <>
           <ul>

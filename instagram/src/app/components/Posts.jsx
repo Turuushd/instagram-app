@@ -1,8 +1,5 @@
 import axios from "axios";
-import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { TbHeart, TbMessageCircle, TbSend } from "react-icons/tb";
 import { PostCard } from "./PostCard";
 
 export const Posts = () => {
