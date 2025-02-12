@@ -13,6 +13,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
 export const PostCard = ({ post }) => {
+  
   const { user, accessToken } = useContext(UserContext);
   const [loading, setLoading] = useState(false);
 
